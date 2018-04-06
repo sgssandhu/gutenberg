@@ -281,7 +281,8 @@ export function createBlockWithFallback( blockNode ) {
 
 		if ( attributesParsedWithDeprecatedVersion ) {
 			block.isValid = true;
-			block.attributes = attributesParsedWithDeprecatedVersion;
+			block.attributes = omit( attributesParsedWithDeprecatedVersion, '_innerBlocks' );
+			block.innerBlocks = attributesParsedWithDeprecatedVersion._innerBlocks || block.innerBlocks;
 		}
 	}
 

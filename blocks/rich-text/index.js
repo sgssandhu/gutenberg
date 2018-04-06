@@ -37,6 +37,11 @@ import { pickAriaProps } from './aria';
 import patterns from './patterns';
 import { EVENTS } from './constants';
 
+/**
+ * Browser dependencies
+ */
+const { console } = window;
+
 const { BACKSPACE, DELETE, ENTER } = keycodes;
 
 export function createTinyMCEElement( type, props, ...children ) {
@@ -148,6 +153,7 @@ export class RichText extends Component {
 		};
 
 		this.isEmpty = ! value || ! value.length;
+		this.savedContent = value;
 	}
 
 	/**
@@ -299,7 +305,7 @@ export class RichText extends Component {
 			} );
 
 			// Allows us to ask for this information when we get a report.
-			window.console.log( 'Received item:\n\n', blob );
+			console.log( 'Received item:\n\n', blob );
 
 			if ( isEmpty && this.props.onReplace ) {
 				// Necessary to allow the paste bin to be removed without errors.
@@ -330,8 +336,8 @@ export class RichText extends Component {
 	onPastePreProcess( event ) {
 		const HTML = this.isPlainTextPaste ? this.pastedPlainText : event.content;
 		// Allows us to ask for this information when we get a report.
-		window.console.log( 'Received HTML:\n\n', HTML );
-		window.console.log( 'Received plain text:\n\n', this.pastedPlainText );
+		console.log( 'Received HTML:\n\n', HTML );
+		console.log( 'Received plain text:\n\n', this.pastedPlainText );
 
 		// There is a selection, check if a link is pasted.
 		if ( ! this.editor.selection.isCollapsed() ) {
@@ -346,7 +352,7 @@ export class RichText extends Component {
 				} );
 
 				// Allows us to ask for this information when we get a report.
-				window.console.log( 'Created link:\n\n', pastedText );
+				console.log( 'Created link:\n\n', pastedText );
 
 				event.preventDefault();
 
@@ -710,15 +716,16 @@ export class RichText extends Component {
 			!! this.editor &&
 			this.props.tagName === prevProps.tagName &&
 			this.props.value !== prevProps.value &&
-			this.props.value !== this.savedContent &&
-
-			// Comparing using isEqual is necessary especially to avoid unnecessary updateContent calls
-			// This fixes issues in multi richText blocks like quotes when moving the focus between
-			// the different editables.
-			! isEqual( this.props.value, prevProps.value ) &&
-			! isEqual( this.props.value, this.savedContent )
+			this.props.value !== this.savedContent
 		) {
 			this.updateContent();
+
+			if (
+				'development' === process.env.NODE_ENV &&
+				isEqual( this.props.value, prevProps.value )
+			) {
+				console.warn( 'The current and previous value props are not strictly equal but the contents are the same. Please ensure the value prop reference does not change.' );
+			}
 		}
 	}
 

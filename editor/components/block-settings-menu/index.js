@@ -18,6 +18,7 @@ import BlockModeToggle from './block-mode-toggle';
 import BlockRemoveButton from './block-remove-button';
 import BlockDuplicateButton from './block-duplicate-button';
 import BlockTransformations from './block-transformations';
+import BlockUnwrap from './block-unwrap';
 import SharedBlockSettings from './shared-block-settings';
 import UnknownConverter from './unknown-converter';
 import { selectBlock } from '../../store/actions';
@@ -66,6 +67,7 @@ function BlockSettingsMenu( {
 						<BlockRemoveButton key="remove" uids={ uids } role="menuitem" />,
 						<BlockDuplicateButton key="duplicate" uids={ uids } rootUID={ rootUID } role="menuitem" />,
 						count === 1 && <SharedBlockSettings key="shared-block" uid={ uids[ 0 ] } onToggle={ onClose } itemsRole="menuitem" />,
+						<BlockUnwrap key="block-unwrap" uids={ uids } onClick={ onClose } role="menuitem" />,
 						<BlockTransformations key="transformations" uids={ uids } onClick={ onClose } itemsRole="menuitem" />,
 					] } ) }
 				</NavigableMenu>

@@ -1,11 +1,7 @@
 /**
- * External dependencies
- */
-import { map } from 'lodash';
-
-/**
  * WordPress dependencies
  */
+import { renderToString } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { withState } from '@wordpress/components';
 
@@ -14,25 +10,13 @@ import { withState } from '@wordpress/components';
  */
 import './editor.scss';
 import './style.scss';
+import { rawHandler } from '../../api';
 import RichText from '../../rich-text';
 import BlockControls from '../../block-controls';
 import BlockAlignmentToolbar from '../../block-alignment-toolbar';
+import InnerBlocks from '../../inner-blocks';
 
-const toRichTextValue = value => map( value, ( subValue => subValue.children ) );
-const fromRichTextValue = value => map( value, ( subValue ) => ( {
-	children: subValue,
-} ) );
 const blockAttributes = {
-	value: {
-		type: 'array',
-		source: 'query',
-		selector: 'blockquote > p',
-		query: {
-			children: {
-				source: 'node',
-			},
-		},
-	},
 	citation: {
 		type: 'array',
 		source: 'children',
@@ -68,7 +52,7 @@ export const settings = {
 	edit: withState( {
 		editable: 'content',
 	} )( ( { attributes, setAttributes, isSelected, className, editable, setState } ) => {
-		const { value, citation, align } = attributes;
+		const { citation, align } = attributes;
 		const updateAlignment = ( nextAlign ) => setAttributes( { align: nextAlign } );
 		const onSetActiveEditable = ( newEditable ) => () => setState( { editable: newEditable } );
 
@@ -82,20 +66,7 @@ export const settings = {
 				</BlockControls>
 			),
 			<blockquote key="quote" className={ className }>
-				<RichText
-					multiline="p"
-					value={ toRichTextValue( value ) }
-					onChange={
-						( nextValue ) => setAttributes( {
-							value: fromRichTextValue( nextValue ),
-						} )
-					}
-					/* translators: the text of the quotation */
-					placeholder={ __( 'Write quote…' ) }
-					wrapperClassName="blocks-pullquote__content"
-					isSelected={ isSelected && editable === 'content' }
-					onFocus={ onSetActiveEditable( 'content' ) }
-				/>
+				<InnerBlocks />
 				{ ( citation || isSelected ) && (
 					<RichText
 						tagName="cite"
@@ -116,13 +87,11 @@ export const settings = {
 	} ),
 
 	save( { attributes } ) {
-		const { value, citation, align } = attributes;
+		const { citation, align } = attributes;
 
 		return (
 			<blockquote className={ `align${ align }` }>
-				{ value && value.map( ( paragraph, i ) =>
-					<p key={ i }>{ paragraph.children && paragraph.children.props.children }</p>
-				) }
+				<InnerBlocks.Content />
 				{ citation && citation.length > 0 && (
 					<cite>{ citation }</cite>
 				) }
@@ -133,6 +102,55 @@ export const settings = {
 	deprecated: [ {
 		attributes: {
 			...blockAttributes,
+			value: {
+				type: 'array',
+				source: 'query',
+				selector: 'blockquote > p',
+				query: {
+					children: {
+						source: 'node',
+					},
+				},
+			},
+		},
+
+		migrate( { value, citation, align } ) {
+			const HTML = value.map( ( { children } ) => renderToString( children ) ).join( '' );
+
+			return {
+				_innerBlocks: rawHandler( { HTML, mode: 'BLOCKS' } ),
+				citation,
+				align,
+			};
+		},
+
+		save( { attributes } ) {
+			const { value, citation, align } = attributes;
+
+			return (
+				<blockquote className={ `align${ align }` }>
+					{ value && value.map( ( paragraph, i ) =>
+						<p key={ i }>{ paragraph.children && paragraph.children.props.children }</p>
+					) }
+					{ citation && citation.length > 0 && (
+						<cite>{ citation }</cite>
+					) }
+				</blockquote>
+			);
+		},
+	}, {
+		attributes: {
+			...blockAttributes,
+			value: {
+				type: 'array',
+				source: 'query',
+				selector: 'blockquote > p',
+				query: {
+					children: {
+						source: 'node',
+					},
+				},
+			},
 			citation: {
 				type: 'array',
 				source: 'children',
