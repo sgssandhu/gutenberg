@@ -2,11 +2,11 @@
  * External dependencies
  */
 import classnames from 'classnames';
+import { castArray } from 'lodash';
 
 /**
  * WordPress dependencies
  */
-import { renderToString } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { Toolbar, withState } from '@wordpress/components';
 
@@ -15,7 +15,7 @@ import { Toolbar, withState } from '@wordpress/components';
  */
 import './style.scss';
 import './editor.scss';
-import { createBlock, rawHandler } from '../../api';
+import { createBlock } from '../../api';
 import AlignmentToolbar from '../../alignment-toolbar';
 import BlockControls from '../../block-controls';
 import RichText from '../../rich-text';
@@ -48,32 +48,19 @@ export const settings = {
 
 	transforms: {
 		from: [
-			{
+			...[ 'core/paragraph', 'core/heading' ].map( ( fromName ) => ( {
 				type: 'block',
-				blocks: [ 'core/paragraph' ],
-				transform: ( attributes ) => createBlock(
-					'core/quote',
-					{},
-					[ createBlock( 'core/paragraph', attributes ) ]
-				),
-			},
-			{
-				type: 'block',
-				blocks: [ 'core/heading' ],
-				transform: ( attributes ) => createBlock(
-					'core/quote',
-					{},
-					[ createBlock( 'core/heading', attributes ) ]
-				),
-			},
+				blocks: [ fromName ],
+				transform: ( attributes ) => createBlock( name, {}, [
+					createBlock( fromName, attributes ),
+				] ),
+			} ) ),
 			{
 				type: 'pattern',
 				regExp: /^>\s/,
-				transform: ( attributes ) => createBlock(
-					'core/quote',
-					{},
-					[ createBlock( 'core/paragraph', attributes ) ]
-				),
+				transform: ( attributes ) => createBlock( name, {}, [
+					createBlock( 'core/paragraph', attributes ),
+				] ),
 			},
 			{
 				type: 'raw',
@@ -177,11 +164,13 @@ export const settings = {
 				},
 			},
 
-			migrate( { value, citation, align, style } ) {
-				const HTML = value.map( ( { children } ) => renderToString( children ) ).join( '' );
-
+			migrate( { value = [], citation, align, style } ) {
 				return {
-					_innerBlocks: rawHandler( { HTML, mode: 'BLOCKS' } ),
+					_innerBlocks: value.map( ( { children: paragraph } ) =>
+						createBlock( 'core/paragraph', {
+							content: castArray( paragraph.props.children ),
+						} )
+					),
 					citation,
 					align,
 					style,

@@ -1,7 +1,11 @@
 /**
+ * External dependencies
+ */
+import { castArray } from 'lodash';
+
+/**
  * WordPress dependencies
  */
-import { renderToString } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { withState } from '@wordpress/components';
 
@@ -10,7 +14,7 @@ import { withState } from '@wordpress/components';
  */
 import './editor.scss';
 import './style.scss';
-import { rawHandler } from '../../api';
+import { createBlock } from '../../api';
 import RichText from '../../rich-text';
 import BlockControls from '../../block-controls';
 import BlockAlignmentToolbar from '../../block-alignment-toolbar';
@@ -114,11 +118,13 @@ export const settings = {
 			},
 		},
 
-		migrate( { value, citation, align } ) {
-			const HTML = value.map( ( { children } ) => renderToString( children ) ).join( '' );
-
+		migrate( { value = [], citation, align } ) {
 			return {
-				_innerBlocks: rawHandler( { HTML, mode: 'BLOCKS' } ),
+				_innerBlocks: value.map( ( { children: paragraph } ) =>
+					createBlock( 'core/paragraph', {
+						content: castArray( paragraph.props.children ),
+					} )
+				),
 				citation,
 				align,
 			};
