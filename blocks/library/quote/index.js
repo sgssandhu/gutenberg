@@ -15,7 +15,7 @@ import { Toolbar, withState } from '@wordpress/components';
  */
 import './style.scss';
 import './editor.scss';
-import { createBlock } from '../../api';
+import { createBlock, rawHandler } from '../../api';
 import AlignmentToolbar from '../../alignment-toolbar';
 import BlockControls from '../../block-controls';
 import RichText from '../../rich-text';
@@ -65,6 +65,12 @@ export const settings = {
 			{
 				type: 'raw',
 				isMatch: ( node ) => node.nodeName === 'BLOCKQUOTE',
+				transform( node ) {
+					return createBlock( name, {}, rawHandler( {
+						HTML: node.innerHTML,
+						mode: 'BLOCKS',
+					} ) );
+				},
 			},
 		],
 		to: [
